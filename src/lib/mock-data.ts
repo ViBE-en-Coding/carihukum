@@ -75,7 +75,7 @@ export function getMockSearchResults(query: string, page = 1, category?: string,
       "Kesehatan",
       "Pendidikan",
     ]
-    const tags: string[] = []
+    const tags = []
     const numTags = Math.floor(Math.random() * 3) + 1
     for (let j = 0; j < numTags; j++) {
       const randomTag = allTags[Math.floor(Math.random() * allTags.length)]

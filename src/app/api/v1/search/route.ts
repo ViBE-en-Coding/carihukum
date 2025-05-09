@@ -23,9 +23,9 @@ export async function GET(request: Request) {
     }
 
     // ElasticSearch configuration
-    const ES_ENDPOINT = 'https://chat.lexin.cs.ui.ac.id/elasticsearch/peraturan_indonesia/';
-    const ES_USERNAME = 'elastic';
-    const ES_PASSWORD = 'password';
+    const ES_ENDPOINT = process.env.ES_ENDPOINT || 'http://localhost:9200/your_index_name/';
+    const ES_USERNAME = process.env.ES_USERNAME || 'elastic';
+    const ES_PASSWORD = process.env.ES_PASSWORD || 'password';
 
     // Calculate pagination parameters
     const pageNum = parseInt(page, 10);

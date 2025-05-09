@@ -1,69 +1,75 @@
-"use client"
+'use client';
 
-import { useRouter } from "next/navigation"
-import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { useRouter } from 'next/navigation';
+import { ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface SearchPaginationProps {
-  currentPage: number
-  totalPages: number
-  query: string
-  category?: string
-  year?: string
+  currentPage: number;
+  totalPages: number;
+  query: string;
+  category?: string;
+  year?: string;
 }
 
-export function SearchPagination({ currentPage, totalPages, query, category, year }: SearchPaginationProps) {
-  const router = useRouter()
+export function SearchPagination({
+  currentPage,
+  totalPages,
+  query,
+  category,
+  year,
+}: SearchPaginationProps) {
+  const router = useRouter();
 
   const handlePageChange = (page: number) => {
-    const params = new URLSearchParams()
+    const params = new URLSearchParams();
 
-    if (query) params.set("q", query)
-    if (category) params.set("category", category)
-    if (year) params.set("year", year)
-    params.set("page", page.toString())
+    if (query) params.set('q', query);
+    if (category) params.set('category', category);
+    if (year) params.set('year', year);
+    params.set('page', page.toString());
 
-    router.push(`/search?${params.toString()}`)
+    router.push(`/search?${params.toString()}`);
 
     // Scroll to top
-    window.scrollTo({ top: 0, behavior: "smooth" })
-  }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Generate page numbers to display
   const getPageNumbers = () => {
-    const pages = []
+    const pages = [];
 
     // Always show first page
-    pages.push(1)
+    pages.push(1);
 
     // Calculate range around current page
-    const rangeStart = Math.max(2, currentPage - 1)
-    const rangeEnd = Math.min(totalPages - 1, currentPage + 1)
+    const rangeStart = Math.max(2, currentPage - 1);
+    const rangeEnd = Math.min(totalPages - 1, currentPage + 1);
 
     // Add ellipsis if there's a gap after first page
     if (rangeStart > 2) {
-      pages.push(-1) // -1 represents ellipsis
+      pages.push(-1); // -1 represents ellipsis
     }
 
     // Add pages in range
     for (let i = rangeStart; i <= rangeEnd; i++) {
-      pages.push(i)
+      pages.push(i);
     }
 
     // Add ellipsis if there's a gap before last page
     if (rangeEnd < totalPages - 1) {
-      pages.push(-2) // -2 represents ellipsis (using different key)
+      pages.push(-2); // -2 represents ellipsis (using different key)
     }
 
     // Always show last page if more than 1 page
     if (totalPages > 1) {
-      pages.push(totalPages)
+      pages.push(totalPages);
     }
 
-    return pages
-  }
+    return pages;
+  };
 
-  const pageNumbers = getPageNumbers()
+  const pageNumbers = getPageNumbers();
 
   return (
     <div className="flex items-center justify-center space-x-1">
@@ -82,17 +88,23 @@ export function SearchPagination({ currentPage, totalPages, query, category, yea
         if (page < 0) {
           // Render ellipsis
           return (
-            <Button key={`ellipsis-${i}`} variant="ghost" size="icon" disabled className="h-8 w-8 cursor-default">
+            <Button
+              key={`ellipsis-${i}`}
+              variant="ghost"
+              size="icon"
+              disabled
+              className="h-8 w-8 cursor-default"
+            >
               <MoreHorizontal className="h-4 w-4" />
               <span className="sr-only">More pages</span>
             </Button>
-          )
+          );
         }
 
         return (
           <Button
             key={page}
-            variant={currentPage === page ? "default" : "outline"}
+            variant={currentPage === page ? 'default' : 'outline'}
             size="icon"
             onClick={() => handlePageChange(page)}
             className="h-8 w-8"
@@ -100,7 +112,7 @@ export function SearchPagination({ currentPage, totalPages, query, category, yea
             {page}
             <span className="sr-only">Page {page}</span>
           </Button>
-        )
+        );
       })}
 
       <Button
@@ -114,5 +126,5 @@ export function SearchPagination({ currentPage, totalPages, query, category, yea
         <span className="sr-only">Next page</span>
       </Button>
     </div>
-  )
+  );
 }

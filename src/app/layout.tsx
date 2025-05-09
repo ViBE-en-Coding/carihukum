@@ -1,20 +1,25 @@
-import type { Metadata } from 'next'
-import './globals.css'
+import type { Metadata } from 'next';
+import './globals.css';
+import { Lexend } from 'next/font/google';
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
-  generator: 'v0.dev',
-}
+  title: 'CariHukum',
+  description: 'Platform pencarian informasi hukum yang cepat dan terpercaya.',
+};
+
+const lexend = Lexend({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700', '800'],
+});
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode
+  children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={lexend.className}>
       <body>{children}</body>
     </html>
-  )
+  );
 }

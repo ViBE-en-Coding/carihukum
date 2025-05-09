@@ -1,5 +1,5 @@
-import { Skeleton } from "@/components/ui/skeleton"
-import { Card, CardContent } from "@/components/ui/card"
+import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent } from '@/components/ui/card';
 
 export function SearchSkeleton() {
   return (
@@ -31,5 +31,5 @@ export function SearchSkeleton() {
         </Card>
       ))}
     </div>
-  )
+  );
 }

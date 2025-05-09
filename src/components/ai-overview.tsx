@@ -1,6 +1,6 @@
-import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bot } from "lucide-react";
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Bot } from 'lucide-react';
 
 interface AiOverviewProps {
   query: string;
@@ -15,13 +15,15 @@ export function AiOverview({ query }: AiOverviewProps) {
   return (
     <Card className="mb-6">
       <CardHeader className="pb-3">
-        <CardTitle className="text-lg font-medium flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-lg font-medium">
           <Bot className="h-5 w-5 text-primary" />
           Ringkasan AI
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-muted-foreground mb-3">{getSummary(query)}</p>
+        <p className="mb-3 text-sm text-muted-foreground">
+          {getSummary(query)}
+        </p>
         <div className="text-xs text-muted-foreground">
           AI dapat melakukan kesalahan. Verifikasi informasi penting.
         </div>

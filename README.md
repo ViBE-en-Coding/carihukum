@@ -190,10 +190,31 @@ All API endpoints are available at: `http://localhost:3000/api/v1`
 | `query` | string | ✅ Yes | - | Search query string |
 | `page` | number | ❌ No | 1 | Page number for pagination |
 | `limit` | number | ❌ No | 10 | Number of results per page |
+| `docType` | string | ❌ No | - | Filter by document type (UU, PP, Perpres, UUDrt, Keppres, Inpres, lainya) |
+| `year` | string | ❌ No | - | Filter by publication year (e.g., "2014") |
 
-#### Example Request
+#### Available Document Types
+- `UU` - Undang-Undang (Law)
+- `PP` - Peraturan Pemerintah (Government Regulation)
+- `Perpres` - Peraturan Presiden (Presidential Regulation)
+- `UUDrt` - Undang-Undang Darurat (Emergency Law)
+- `Keppres` - Keputusan Presiden (Presidential Decree)
+- `Inpres` - Instruksi Presiden (Presidential Instruction)
+- `lainya` - Other document types
+
+#### Example Requests
 ```bash
+# Basic search
 GET /api/v1/search?query=peraturan%20pemerintah&page=1&limit=5
+
+# Search with document type filter
+GET /api/v1/search?query=notaris&docType=UU
+
+# Search with year filter
+GET /api/v1/search?query=pajak&year=2014
+
+# Search with multiple filters
+GET /api/v1/search?query=notaris&docType=UU&year=2014&page=1&limit=10
 ```
 
 #### Response Format

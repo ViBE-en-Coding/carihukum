@@ -1,6 +1,10 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Bot } from 'lucide-react';
+import Markdown from 'react-markdown';
+import remarkGFM from 'remark-gfm';
+import { Skeleton } from './ui/skeleton';
+import { cn } from '@/lib/utils';
 
 interface AiOverviewProps {
   query: string;
@@ -8,10 +12,9 @@ interface AiOverviewProps {
 }
 
 const prompt = (props: AiOverviewProps) => `
-Anda adalah seorang asiten AI yang melakukan ringkasan informasi pada suatu halaman mesin pencarian hukum (SERP summary).
-Anda diberikan query berikut: "${props.query}".
-Berdasarkan query tersebut, berikan ringkasan informasi hukum yang relevan dengan query tersebut.
-Berikut adalah top-5 hasil pencarian yang relevan dengan query tersebut:
+Anda adalah asisten AI untuk mesin pencarian hukum.
+Berikan ringkasan SINGKAT dan PADAT (maksimal 3-4 paragraf) tentang: "${props.query}".
+Fokus pada aspek hukum paling relevan berdasarkan hasil pencarian berikut:
 ${props.contents.map((content, index) => `Hasil ${index + 1}: ${content}`).join('\n')}
 `
 
@@ -56,21 +59,30 @@ export function AiOverview({ query, contents }: AiOverviewProps) {
 
   return (
     <Card className="mb-6">
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-3 bg-blue-50">
         <CardTitle className="flex items-center gap-2 text-lg font-medium">
-          <Bot className="h-5 w-5 text-primary" />
-          Ringkasan AI
+          <Bot className={cn("h-5 w-5 text-primary",
+            loading && "animate-pulse"
+          )} />
+          {loading ? <Skeleton className="h-4 w-1/2 bg-blue-100" /> : query}
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className='bg-blue-50'>
         {loading ? (
-          <p className="mb-3 text-sm text-muted-foreground">Memuat ringkasan AI...</p>
+          <div className="space-y-2 mb-3">
+            <Skeleton className="h-4 w-full bg-blue-100" />
+            <Skeleton className="h-4 w-[90%] bg-blue-100" />
+            <Skeleton className="h-4 w-[95%] bg-blue-100" />
+            <Skeleton className="h-4 w-[85%] bg-blue-100" />
+          </div>
         ) : error ? (
-          <p className="mb-3 text-sm text-red-500">{error}</p>
+          <p className="mb-3 text-sm text-red-500 bg-blue-50">{error}</p>
         ) : (
-          <p className="mb-3 text-sm text-muted-foreground">
-            {summary}
-          </p>
+          <div className="mb-3 text-sm text-muted-foreground prose max-w-none bg-blue-50 opacity-80">
+            <Markdown remarkPlugins={[remarkGFM]}>
+              {summary}
+            </Markdown>
+          </div>
         )}
         <div className="text-xs text-muted-foreground">
           AI dapat melakukan kesalahan. Verifikasi informasi penting.

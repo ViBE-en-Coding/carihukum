@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, ArrowUpRight, Loader2 } from 'lucide-react';
+import { Skeleton } from './ui/skeleton';
 
 interface AutocompleteResultsProps {
   results: string[];
@@ -21,8 +22,11 @@ export function AutocompleteResults({
     <div className="absolute left-0 right-0 z-10 mt-1 overflow-hidden rounded-md border bg-background shadow-md">
       {isLoading ? (
         <div className="flex items-center justify-center p-4 text-sm text-muted-foreground">
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Mencari saran...
+          <Skeleton className="h-4 w-full bg-muted" />
+          <Skeleton className="h-4 w-full bg-muted" />
+          <Skeleton className="h-4 w-full bg-muted" />
+          <Skeleton className="h-4 w-full bg-muted" />
+          <Skeleton className="h-4 w-full bg-muted" />
         </div>
       ) : (
         <ul className="py-2 max-h-60 overflow-y-auto">
@@ -50,9 +54,9 @@ export function AutocompleteResults({
           ))}
         </ul>
       )}
-     </div>
+    </div>
   );
-}     
+}
 
 function highlightQueryMatch(text: string, query: string) {
   if (!query) return text;

@@ -153,7 +153,7 @@ bun start
 - **Smart Content Analysis** - AI-driven document insights
 
 ### 📚 **Document Management**
-- **Document Viewer** - PDF preview for the documents 
+- **Document Viewer** - PDF preview for the documents
 - **Document Download** - Direct download of legal documents
 - **Multiple File Support** - Handle documents with multiple file attachments
 - **File Format Support** - PDF and other document formats
@@ -169,6 +169,311 @@ bun start
 - **Responsive Design** - Works seamlessly on desktop and mobile
 - **Loading States** - Smooth loading indicators and skeleton screens
 - **Error Handling** - Graceful error states with helpful messages
+
+## 📖 API Documentation
+
+### Base URL
+All API endpoints are available at: `http://localhost:3000/api/v1`
+
+---
+
+### 🔍 Search API
+
+**Endpoint:** `GET /api/v1/search`
+
+**Description:** Performs full-text search across Indonesian legal documents using ElasticSearch.
+
+#### Query Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `query` | string | ✅ Yes | - | Search query string |
+| `page` | number | ❌ No | 1 | Page number for pagination |
+| `limit` | number | ❌ No | 10 | Number of results per page |
+
+#### Example Request
+```bash
+GET /api/v1/search?query=peraturan%20pemerintah&page=1&limit=5
+```
+
+#### Response Format
+```typescript
+{
+  "total": number,           // Total number of matching documents
+  "took": number,            // Search execution time in milliseconds
+  "page": number,            // Current page number
+  "limit": number,           // Results per page
+  "results": [
+    {
+      "score": number,       // Relevance score
+      "id": string,          // Document ID
+      "metadata": {
+        "Judul": string,     // Document title
+        "Nomor": string,     // Document number
+        "Tahun": string,     // Publication year
+        "Tanggal": string,   // Date
+        "Status": string,    // Document status
+        "Subjek": string,    // Subject/category
+        // ... additional metadata fields
+      },
+      "highlight": {
+        "metadata.Judul": string[],    // Highlighted title matches
+        "abstrak": string[],           // Highlighted abstract matches
+        "files.content": string[]      // Highlighted content matches
+      },
+      "abstract": string,              // Document abstract
+      "files": [
+        {
+          "file_id": string,           // File identifier
+          "filename": string,          // Original filename
+          "download_url": string       // Direct download URL
+        }
+      ],
+      "relations": object              // Related documents data
+    }
+  ]
+}
+```
+
+#### Example Response
+```json
+{
+  "total": 150,
+  "took": 45,
+  "page": 1,
+  "limit": 5,
+  "results": [
+    {
+      "score": 8.5,
+      "id": "doc_123",
+      "metadata": {
+        "Judul": "Peraturan Pemerintah Republik Indonesia Nomor 24 Tahun 2018",
+        "Nomor": "24 Tahun 2018",
+        "Tahun": "2018",
+        "Status": "Berlaku",
+        "Subjek": "Pelayanan Perizinan Berusaha Terintegrasi Secara Elektronik"
+      },
+      "highlight": {
+        "metadata.Judul": ["**Peraturan Pemerintah** Republik Indonesia"],
+        "abstrak": ["mengatur tentang **peraturan** pelaksanaan"]
+      },
+      "abstract": "Peraturan ini mengatur tentang pelayanan perizinan berusaha...",
+      "files": [
+        {
+          "file_id": "file_456",
+          "filename": "pp_24_2018.pdf",
+          "download_url": "https://example.com/download/pp_24_2018.pdf"
+        }
+      ],
+      "relations": {}
+    }
+  ]
+}
+```
+
+#### Error Responses
+
+**400 Bad Request** - Missing query parameter
+```json
+{
+  "error": "Query parameter is required"
+}
+```
+
+**500 Internal Server Error** - Search execution failure
+```json
+{
+  "error": "Failed to execute search",
+  "details": "Connection timeout to ElasticSearch"
+}
+```
+
+---
+
+### 🎯 Query Auto-Complete API
+
+**Endpoint:** `GET /api/v1/qac`
+
+**Description:** Provides real-time search suggestions based on partial query input.
+
+#### Query Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `query` | string | ✅ Yes | Partial search query for suggestions |
+
+#### Example Request
+```bash
+GET /api/v1/qac?query=perpres
+```
+
+#### Response Format
+```typescript
+string[]  // Array of suggestion strings
+```
+
+#### Example Response
+```json
+[
+  "peraturan presiden nomor 16 tahun 2018",
+  "perpres tentang pengadaan barang jasa",
+  "peraturan presiden bidang investasi",
+  "perpres nomor 12 tahun 2021 tentang",
+  "peraturan presiden republik indonesia"
+]
+```
+
+#### Error Responses
+
+**400 Bad Request** - Missing query parameter
+```json
+{
+  "error": "Query parameter is required"
+}
+```
+
+**500 Internal Server Error** - Auto-complete failure
+```json
+{
+  "error": "Failed to execute search",
+  "details": "ElasticSearch connection error"
+}
+```
+
+---
+
+### 🤖 AI Summary API
+
+**Endpoint:** `POST /api/v1/ai`
+
+**Description:** Generates intelligent summaries of legal documents using Deepseek R1 671B model.
+
+#### Request Body
+```typescript
+{
+  "prompt": string  // Text content to summarize
+}
+```
+
+#### Example Request
+```bash
+POST /api/v1/ai
+Content-Type: application/json
+
+{
+  "prompt": "Summarize this legal document: [document content here]"
+}
+```
+
+#### Response Format
+```typescript
+{
+  "summary": string  // AI-generated summary
+}
+```
+
+#### Example Response
+```json
+{
+  "summary": "This regulation establishes the framework for integrated electronic business licensing services, streamlining the permit application process for businesses in Indonesia. Key provisions include digital submission requirements, standardized processing times, and inter-agency coordination mechanisms."
+}
+```
+
+#### Error Responses
+
+**400 Bad Request** - Invalid prompt
+```json
+{
+  "error": "Invalid prompt"
+}
+```
+
+**500 Internal Server Error** - AI processing failure
+```json
+{
+  "error": "Internal Server Error"
+}
+```
+
+---
+
+### 📝 API Usage Examples
+
+#### JavaScript/TypeScript Client
+
+```typescript
+// Search for documents
+async function searchDocuments(query: string, page: number = 1) {
+  const response = await fetch(`/api/v1/search?query=${encodeURIComponent(query)}&page=${page}`);
+  const data = await response.json();
+  return data;
+}
+
+// Get auto-complete suggestions
+async function getAutoComplete(query: string) {
+  const response = await fetch(`/api/v1/qac?query=${encodeURIComponent(query)}`);
+  const suggestions = await response.json();
+  return suggestions;
+}
+
+// Generate AI summary
+async function generateSummary(content: string) {
+  const response = await fetch('/api/v1/ai', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ prompt: content }),
+  });
+  const data = await response.json();
+  return data.summary;
+}
+```
+
+#### cURL Examples
+
+```bash
+# Search documents
+curl -X GET "http://localhost:3000/api/v1/search?query=undang-undang&page=1&limit=10"
+
+# Get auto-complete suggestions
+curl -X GET "http://localhost:3000/api/v1/qac?query=perpres"
+
+# Generate AI summary
+curl -X POST "http://localhost:3000/api/v1/ai" \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "Summarize this legal document content..."}'
+```
+
+### 🔧 Environment Configuration
+
+The API requires the following environment variables:
+
+```bash
+# ElasticSearch Configuration
+ES_ENDPOINT=http://localhost:9200/your_index_name/
+ES_USERNAME=elastic
+ES_PASSWORD=your_password
+
+# AI Integration
+OPENROUTER_API_KEY=your_openrouter_api_key
+```
+
+### 📊 Rate Limiting & Performance
+
+- **Search API**: Optimized for fast response times, typically under 100ms
+- **Auto-complete API**: Limited to 5 suggestions per request for performance
+- **AI Summary API**: Response time varies based on content length (2-10 seconds)
+- No explicit rate limiting is currently implemented
+
+### 🛡️ Error Handling
+
+All APIs follow consistent error response patterns:
+
+1. **4xx Client Errors**: Invalid requests, missing parameters
+2. **5xx Server Errors**: Internal processing failures, external service issues
+3. **Detailed Error Messages**: Include specific failure reasons when possible
+4. **Graceful Degradation**: APIs continue functioning even if some features fail
 
 ## 📊 Dataset and Data Sources
 
@@ -339,132 +644,4 @@ interface DocumentMetadata {
     }
   }
 }
-```
-
-## 📖 Usage Examples
-
-### Basic Search
-1. **Simple text search**
-   ```
-   Search: "hak asasi manusia"
-   Results: Documents containing human rights-related content
-   ```
-
-2. **Document type filtering**
-   ```
-   Search: "pajak" + Filter: "Undang-Undang"
-   Results: Tax-related laws only
-   ```
-
-3. **Year-based filtering**
-   ```
-   Search: "lingkungan" + Year: "2023"
-   Results: Environmental regulations from 2023
-   ```
-
-### Advanced Features
-
-#### 1. **Auto-Complete Search**
-As you type, the system provides intelligent suggestions:
-```
-Type: "hak asa..."
-Suggestions:
-- "hak asasi manusia"
-- "hak asasi politik"
-- "hak asasi sipil"
-```
-
-#### 2. **AI-Powered Summaries**
-Each search result includes an AI-generated summary:
-```
-Document: "UU No. 39 Tahun 1999 tentang Hak Asasi Manusia"
-AI Summary: "Undang-undang ini mengatur tentang perlindungan, 
-penghormatan, penegakan, dan pemajuan hak asasi manusia di Indonesia. 
-Mencakup hak sipil, politik, ekonomi, sosial, dan budaya."
-```
-
-#### 3. **Highlighted Search Results**
-Search terms are highlighted in titles and abstracts:
-```
-Title: "Undang-Undang tentang [HAK ASASI MANUSIA]"
-Abstract: "Peraturan ini mengatur tentang [HAK ASASI MANUSIA] dan..."
-```
-
-#### 4. **PDF Document Preview**
-- Click on any search result to open PDF preview
-- Multiple file support with tab navigation
-- Fallback viewers (Google Docs, Mozilla PDF.js)
-- Download and external view options
-
-#### 5. **Search History Management**
-- Automatic storage of search queries
-- Quick access to previous searches
-- Search history persistence across sessions
-
-#### 6. **Pagination and Navigation**
-- Configurable results per page
-- Dynamic pagination based on total results
-- URL-based navigation for shareable links
-
-### API Usage Example
-
-```javascript
-// Search documents programmatically
-const searchResults = await fetch('/api/v1/search', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    query: 'hak asasi manusia',
-    page: 1,
-    category: 'Undang-Undang',
-    year: '2023'
-  })
-});
-
-const data = await searchResults.json();
-console.log(data.results); // Array of search results
-```
-
-## 🔧 Configuration
-
-### Search Configuration
-Modify search behavior in `src/lib/search-api.ts`:
-```typescript
-const searchDocuments = async (params: SearchParams): Promise<SearchResponse> => {
-  const searchParams = new URLSearchParams({
-    query: params.query,
-    page: params.page.toString(),
-    limit: '10', // Results per page
-    // Add custom parameters
-  });
-};
-```
-
-### AI Integration Configuration
-Configure Deepseek R1 671B model settings:
-```typescript
-// src/lib/ai-config.ts
-export const AI_CONFIG = {
-  model: 'deepseek-chat',
-  maxTokens: 1000,
-  temperature: 0.1,
-  systemPrompt: 'You are an AI assistant specializing in Indonesian legal documents...'
-};
-```
-
-### ElasticSearch Configuration
-```javascript
-// ElasticSearch connection configuration
-const client = new Client({
-  node: process.env.ELASTICSEARCH_URL,
-  auth: {
-    username: process.env.ELASTICSEARCH_USERNAME,
-    password: process.env.ELASTICSEARCH_PASSWORD
-  },
-  tls: {
-    rejectUnauthorized: false
-  }
-});
 ```

@@ -24,10 +24,9 @@ const docTypes = [
   { id: 'lainya', label: 'Lainnya' },
 ];
 
-// Generate years from 1800 to current year + 1
-const currentYear = new Date().getFullYear();
-const years = Array.from({ length: currentYear - 1800 + 2 }, (_, i) => {
-  const year = currentYear + 1 - i;
+// Generate years from 1945 to 2025 (in descending order)
+const years = Array.from({ length: 2025 - 1945 + 1 }, (_, i) => {
+  const year = 2025 - i;
   return { id: year.toString(), label: year.toString() };
 });
 
@@ -44,22 +43,9 @@ export function SearchFilters({
   const handleDocTypeChange = (docTypeId: string) => {
     const newDocType = selectedDocType === docTypeId ? '' : docTypeId;
     updateFilters({ docType: newDocType, year: selectedYear });
-  };
-  const handleYearChange = (yearId: string) => {
+  };  const handleYearChange = (yearId: string) => {
     const newYear = selectedYear === yearId ? '' : yearId;
     updateFilters({ docType: selectedDocType, year: newYear });
-  };
-
-  const handleYearInputChange = (value: string) => {
-    // Only update if the value is a valid year or empty
-    if (
-      value === '' ||
-      (!isNaN(Number(value)) &&
-        Number(value) >= 1800 &&
-        Number(value) <= currentYear + 1)
-    ) {
-      updateFilters({ docType: selectedDocType, year: value });
-    }
   };
 
   const updateFilters = ({
@@ -211,36 +197,19 @@ export function SearchFilters({
                         exit={{ height: 0, opacity: 0 }}
                         transition={{ duration: 0.2 }}
                         className="overflow-hidden"
-                      >
-                        <div className="space-y-3 pt-1">
-                          {' '}
-                          {/* Year Input Field */}
-                          <div className="space-y-2">
-                            <label
-                              htmlFor="year-input"
-                              className="text-xs font-medium text-muted-foreground"
-                            >
-                              Masukkan Tahun Spesifik
-                            </label>
-                            <input
-                              id="year-input"
-                              type="number"
-                              min="1800"
-                              max={currentYear + 1}
-                              placeholder="Contoh: 2014"
-                              value={
-                                selectedYear &&
-                                !selectedYear.includes('-') &&
-                                selectedYear !== 'before-1980'
-                                  ? selectedYear
-                                  : ''
-                              }
-                              onChange={(e) =>
-                                handleYearInputChange(e.target.value)
-                              }
-                              className="w-full rounded-md border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                            />
-                          </div>
+                      >                        <div className="space-y-2 pt-1">
+                          <select
+                            value={selectedYear}
+                            onChange={(e) => handleYearChange(e.target.value)}
+                            className="w-full rounded-md border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                          >
+                            <option value="">Pilih Tahun</option>
+                            {years.map((year) => (
+                              <option key={year.id} value={year.id}>
+                                {year.label}
+                              </option>
+                            ))}
+                          </select>
                         </div>
                       </motion.div>
                     )}

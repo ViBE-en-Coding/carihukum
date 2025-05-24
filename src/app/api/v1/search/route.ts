@@ -13,8 +13,8 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
 
     const query = searchParams.get('query');
-    const page = searchParams.get('page') ?? '1';
-    const limit = searchParams.get('limit') ?? '10';
+    const page = searchParams.get('page') || '1';
+    const limit = searchParams.get('limit') || '10';
     const docType = searchParams.get('docType');
     const year = searchParams.get('year');
 
@@ -25,51 +25,47 @@ export async function GET(request: Request) {
     }
 
     // ElasticSearch configuration
-    const ES_ENDPOINT = process.env.ES_ENDPOINT ?? 'http://localhost:9200/your_index_name/';
-    const ES_USERNAME = process.env.ES_USERNAME ?? 'elastic';
-    const ES_PASSWORD = process.env.ES_PASSWORD ?? 'password';
+    const ES_ENDPOINT = process.env.ES_ENDPOINT || 'http://localhost:9200/your_index_name/';
+    const ES_USERNAME = process.env.ES_USERNAME || 'elastic';
+    const ES_PASSWORD = process.env.ES_PASSWORD || 'password';
 
     // Calculate pagination parameters
     const pageNum = parseInt(page, 10);
     const limitNum = parseInt(limit, 10);
     const from = (pageNum - 1) * limitNum;
 
-    const startTime = Date.now();    try {
-        // Build filter clauses
-        const filterClauses: any[] = [];
-        
-        if (docType && docType !== '') {
-            filterClauses.push({
-                term: { "metadata.Jenis.keyword": docType }
-            });
-        }
-          if (year && year !== '') {
-            if (year.includes('-')) {
-                // Handle year ranges like "2020-2024"
-                const [startYear, endYear] = year.split('-').map(y => parseInt(y, 10));
-                filterClauses.push({
-                    range: {
-                        "metadata.Tahun": {
-                            gte: startYear,
-                            lte: endYear
-                        }
-                    }
-                });
-            } else if (year === 'before-1980') {
-                // Handle "before 1980" case
-                filterClauses.push({
-                    range: {
-                        "metadata.Tahun": {
-                            lt: 1980
-                        }
+    const startTime = Date.now();
+
+    try {
+        // Build filter conditions
+        const filters: any[] = [];
+
+        if (docType) {
+            if (docType === 'lainya') {
+                // Filter out the specific document types
+                filters.push({
+                    bool: {
+                        must_not: [
+                            { term: { "metadata.Bentuk Singkat": "Perpres" } },
+                            { term: { "metadata.Bentuk Singkat": "PP" } },
+                            { term: { "metadata.Bentuk Singkat": "UU" } },
+                            { term: { "metadata.Bentuk Singkat": "UUDrt" } },
+                            { term: { "metadata.Bentuk Singkat": "Keppres" } },
+                            { term: { "metadata.Bentuk Singkat": "Inpres" } }
+                        ]
                     }
                 });
             } else {
-                // Handle specific year
-                filterClauses.push({
-                    term: { "metadata.Tahun": parseInt(year, 10) }
+                filters.push({
+                    term: { "metadata.Bentuk Singkat": docType }
                 });
             }
+        }
+
+        if (year) {
+            filters.push({
+                term: { "metadata.Tahun": year }
+            });
         }
 
         // Build ElasticSearch query
@@ -98,7 +94,7 @@ export async function GET(request: Request) {
                         // Search in notes
                         { match: { "catatan": query } }
                     ],
-                    filter: filterClauses.length > 0 ? filterClauses : undefined
+                    ...(filters.length > 0 && { filter: filters })
                 }
             },
             highlight: {
@@ -200,7 +196,7 @@ export async function GET(request: Request) {
                     filename: file.filename,
                     download_url: file.download_url
                 })) : [],
-                relations: hit._source.relations ?? {}
+                relations: hit._source.relations || {}
             }))
         }), {
             status: 200,

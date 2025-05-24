@@ -2,104 +2,63 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, ArrowUpRight } from 'lucide-react';
+import { Search, ArrowUpRight, Loader2 } from 'lucide-react';
 
 interface AutocompleteResultsProps {
   results: string[];
   onSelect: (result: string) => void;
   query: string;
+  isLoading?: boolean;
 }
 
 export function AutocompleteResults({
   results,
   onSelect,
   query,
+  isLoading = false,
 }: AutocompleteResultsProps) {
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
-
-  // Reset highlighted index when results change
-  useEffect(() => {
-    setHighlightedIndex(-1);
-  }, [results]);
-
-  // Handle keyboard navigation
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (results.length === 0) return;
-
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        setHighlightedIndex((prev) =>
-          prev < results.length - 1 ? prev + 1 : prev
-        );
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : 0));
-      } else if (e.key === 'Enter' && highlightedIndex >= 0) {
-        e.preventDefault();
-        onSelect(results[highlightedIndex]);
-      } else if (e.key === 'Escape') {
-        e.preventDefault();
-        // Close dropdown handled by parent
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [results, highlightedIndex, onSelect]);
-
-  if (results.length === 0) return null;
-
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -10 }}
-        transition={{ duration: 0.15 }}
-        className="absolute z-50 mt-1 w-full overflow-hidden rounded-md border bg-background shadow-md"
-      >
-        <ul className="py-1">
+    <div className="absolute left-0 right-0 z-10 mt-1 overflow-hidden rounded-md border bg-background shadow-md">
+      {isLoading ? (
+        <div className="flex items-center justify-center p-4 text-sm text-muted-foreground">
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          Mencari saran...
+        </div>
+      ) : (
+        <ul className="py-2 max-h-60 overflow-y-auto">
           {results.map((result, index) => (
-            <li key={index}>
+            <motion.li
+              key={`${result}-${index}`}
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.15, delay: index * 0.05 }}
+            >
               <button
-                type="button"
-                className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm ${
-                  index === highlightedIndex
-                    ? 'bg-primary/10 text-primary'
-                    : 'hover:bg-muted'
-                }`}
+                className="flex w-full items-center px-4 py-2 text-left text-sm hover:bg-muted focus:bg-muted focus:outline-none"
                 onClick={() => onSelect(result)}
-                onMouseEnter={() => setHighlightedIndex(index)}
+                type="button"
               >
-                <Search className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                <span className="flex-1 truncate">
-                  {highlightQueryMatch(result, query)}
-                </span>
-                <ArrowUpRight className="h-3 w-3 text-muted-foreground opacity-50" />
+                <Search className="mr-2 h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <span
+                  className="flex-1 truncate"
+                  dangerouslySetInnerHTML={{
+                    __html: highlightQueryMatch(result, query),
+                  }}
+                />
               </button>
-            </li>
+            </motion.li>
           ))}
         </ul>
-      </motion.div>
-    </AnimatePresence>
+      )}
+     </div>
   );
-}
+}     
 
-// Helper function to highlight the matching part of the query
 function highlightQueryMatch(text: string, query: string) {
   if (!query) return text;
 
-  const regex = new RegExp(`(${query})`, 'gi');
-  const parts = text.split(regex);
-
-  return parts.map((part, i) =>
-    regex.test(part) ? (
-      <span key={i} className="font-medium">
-        {part}
-      </span>
-    ) : (
-      part
-    )
-  );
+  // Escape special regex characters in query
+  const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`(${escapedQuery})`, 'gi');
+  return text.replace(regex, '<strong class="text-primary font-medium">$1</strong>');
 }

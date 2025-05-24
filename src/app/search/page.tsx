@@ -1,20 +1,48 @@
-import { Suspense } from 'react';
+'use client';
+
+import { useState, Suspense, use, useCallback } from 'react';
 import { SearchForm } from '@/components/search-form';
 import { SearchResults } from '@/components/search-results';
 import { SearchFilters } from '@/components/search-filters';
 import { SearchPagination } from '@/components/search-pagination';
 import { SearchSkeleton } from '@/components/search-skeleton';
 import { AiOverview } from '@/components/ai-overview';
+import { SearchResponse } from '@/types/search';
 
 export default function SearchPage({
   searchParams,
 }: {
-  searchParams: { q: string; page?: string; category?: string; year?: string };
+  readonly searchParams: Promise<{
+    q: string;
+    page?: string;
+    category?: string;
+    year?: string;
+  }>;
 }) {
-  const query = searchParams.q || '';
-  const page = Number(searchParams.page) || 1;
-  const category = searchParams.category || '';
-  const year = searchParams.year || '';
+  const resolvedSearchParams = use(searchParams);
+  const query = resolvedSearchParams.q ?? '';
+  const page = Number(resolvedSearchParams.page) || 1;
+  const category = resolvedSearchParams.category ?? '';
+  const year = resolvedSearchParams.year ?? '';
+  const [searchResponse, setSearchResponse] = useState<SearchResponse | null>(
+    null
+  );
+
+  const handleSearchComplete = useCallback((response: SearchResponse) => {
+    setSearchResponse(response);
+  }, []);
+
+  const totalPages = searchResponse
+    ? Math.ceil(searchResponse.total / searchResponse.limit)
+    : 0;
+
+  const resultStart = searchResponse
+    ? (searchResponse.page - 1) * searchResponse.limit + 1
+    : 0;
+
+  const resultEnd = searchResponse
+    ? Math.min(searchResponse.page * searchResponse.limit, searchResponse.total)
+    : 0;
 
   return (
     <main className="flex min-h-screen flex-col">
@@ -40,36 +68,52 @@ export default function SearchPage({
             />
           </div>
           <div className="flex-1">
+            {' '}
             <div className="mb-4">
               <h1 className="text-xl font-semibold">
                 Hasil pencarian untuk "{query}"
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                Menampilkan hasil {(page - 1) * 10 + 1}-{page * 10} dari sekitar
-                120 hasil
-              </p>
+              </h1>{' '}
+              {searchResponse && searchResponse.total > 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Menampilkan hasil {resultStart}-{resultEnd} dari{' '}
+                  {searchResponse.total.toLocaleString('id-ID')} hasil
+                  {Boolean(searchResponse.took) && (
+                    <span className="ml-2">
+                      ({(searchResponse.took / 1000).toFixed(2)} detik)
+                    </span>
+                  )}
+                </p>
+              ) : (
+                query &&
+                searchResponse && (
+                  <p className="text-sm text-muted-foreground">
+                    Tidak ada hasil ditemukan
+                  </p>
+                )
+              )}
             </div>
-
             {/* AI Overview section */}
-            {query && <AiOverview query={query} />}
-
+            {query && <AiOverview query={query} />}{' '}
             <Suspense fallback={<SearchSkeleton />}>
               <SearchResults
                 query={query}
                 page={page}
                 category={category}
                 year={year}
+                onSearchComplete={handleSearchComplete}
               />
             </Suspense>
-            <div className="mt-6">
-              <SearchPagination
-                currentPage={page}
-                totalPages={12}
-                query={query}
-                category={category}
-                year={year}
-              />
-            </div>
+            {searchResponse && searchResponse.total > 0 && (
+              <div className="mt-6">
+                <SearchPagination
+                  currentPage={page}
+                  totalPages={totalPages}
+                  query={query}
+                  category={category}
+                  year={year}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>

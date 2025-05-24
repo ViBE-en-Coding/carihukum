@@ -73,7 +73,7 @@ export async function GET(request: Request) {
         }
 
         // Build ElasticSearch query
-        const searchQuery = {
+        const buildSearchQuery = (includeFiles = true): any => ({
             from: from,
             size: limitNum,
             query: {
@@ -83,8 +83,8 @@ export async function GET(request: Request) {
                         { match: { "metadata.Judul": { query: query, boost: 3.0 } } },
                         // Search in document number
                         { match: { "metadata.Nomor": { query: query, boost: 2.0 } } },
-                        // Search in document content
-                        {
+                        // Search in document content (conditionally included)
+                        ...(includeFiles ? [{
                             nested: {
                                 path: "files",
                                 query: {
@@ -92,7 +92,7 @@ export async function GET(request: Request) {
                                 },
                                 score_mode: "avg"
                             }
-                        },
+                        }] : []),
                         // Search in abstract
                         { match: { "abstrak": { query: query, boost: 2.0 } } },
                         // Search in notes
@@ -105,15 +105,17 @@ export async function GET(request: Request) {
                 fields: {
                     "metadata.Judul": {},
                     "abstrak": {},
-                    "files.content": {}
+                    ...(includeFiles && { "files.content": {} })
                 },
                 pre_tags: ["**"],
                 post_tags: ["**"]
             }
-        };
+        });
+
+        let searchQuery = buildSearchQuery(true);
 
         // Make request to ElasticSearch
-        const response = await fetch(ES_ENDPOINT + '_search', {
+        let response = await fetch(ES_ENDPOINT + '_search', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -121,6 +123,20 @@ export async function GET(request: Request) {
             },
             body: JSON.stringify(searchQuery)
         });
+
+        // If 400 error, retry without files.content
+        if (response.status === 400) {
+            console.log('Retrying search without files.content due to 400 error');
+            searchQuery = buildSearchQuery(false);
+            response = await fetch(ES_ENDPOINT + '_search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Basic ' + Buffer.from(`${ES_USERNAME}:${ES_PASSWORD}`).toString('base64')
+                },
+                body: JSON.stringify(searchQuery)
+            });
+        }
 
         if (!response.ok) {
             let errorMessage = `ElasticSearch query failed with status ${response.status}`;

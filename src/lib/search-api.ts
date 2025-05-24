@@ -29,24 +29,24 @@ export async function searchDocuments(
   }
 
   try {
-    // const response = await fetch(
-    //   `${API_BASE_URL}/search?${searchParams.toString()}`,
-    //   {
-    //     method: 'GET',
-    //     headers: {
-    //       'Content-Type': 'application/json',
-    //     },
-    //   }
-    // );
+    const response = await fetch(
+      `${API_BASE_URL}/search?${searchParams.toString()}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
 
-    // if (!response.ok) {
-    //   const errorData: SearchError = await response.json();
-    //   throw new Error(
-    //     errorData.error || `Search failed with status ${response.status}`
-    //   );
-    // }
+    if (!response.ok) {
+      const errorData: SearchError = await response.json();
+      throw new Error(
+        errorData.error || `Search failed with status ${response.status}`
+      );
+    }
 
-    const apiResponse: SearchApiResponse = SAMPLE_SEARCH_RESPONSE;
+    const apiResponse: SearchApiResponse = await response.json();
 
     // Transform API response to match component interface
     const transformedResults: SearchResult[] = apiResponse.results.map(

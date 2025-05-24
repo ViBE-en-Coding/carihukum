@@ -1,11 +1,18 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { ArrowUpRight, FileText, Calendar, Loader2, AlertCircle } from 'lucide-react';
+import {
+  ArrowUpRight,
+  FileText,
+  Calendar,
+  Loader2,
+  AlertCircle,
+} from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { searchDocuments, parseHighlights } from '@/lib/search-api';
 import { SearchResult, SearchResponse } from '@/types/search';
+import { DocumentViewerDialog } from '@/components/document-viewer-dialog';
 
 interface SearchResultsProps {
   readonly query: string;
@@ -25,7 +32,7 @@ export function SearchResults({
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Use ref to store the latest callback to avoid dependency issues
   const onSearchCompleteRef = useRef(onSearchComplete);
   onSearchCompleteRef.current = onSearchComplete;
@@ -47,20 +54,20 @@ export function SearchResults({
           category,
           year,
         });
-
         setResults(response.results);
-        onSearchComplete?.(response);
+        // Use the ref to call the callback
+        onSearchCompleteRef.current?.(response);
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to fetch search results';
+        const errorMessage =
+          err instanceof Error ? err.message : 'Failed to fetch search results';
         setError(errorMessage);
         setResults([]);
       } finally {
         setLoading(false);
       }
     }
-
     fetchResults();
-  }, [query, page, category, year, onSearchComplete]);
+  }, [query, page, category, year]);
 
   if (loading) {
     return (
@@ -76,9 +83,7 @@ export function SearchResults({
       <div className="py-12 text-center">
         <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
         <h3 className="mt-4 text-lg font-medium">Terjadi kesalahan</h3>
-        <p className="mt-2 text-muted-foreground">
-          {error}
-        </p>
+        <p className="mt-2 text-muted-foreground">{error}</p>
         <p className="mt-1 text-sm text-muted-foreground">
           Silakan coba lagi atau gunakan kata kunci yang berbeda
         </p>
@@ -107,80 +112,83 @@ export function SearchResults({
       </div>
     );
   }
-
   return (
     <div className="space-y-4">
       {results.map((result) => (
-        <Card
-          key={result.id}
-          className="overflow-hidden transition-shadow hover:shadow-md"
-        >
-          <CardContent className="p-4">
-            <div className="flex items-start gap-3">
-              <div className="mt-1 rounded-md bg-primary/10 p-2">
-                <FileText className="h-5 w-5 text-primary" />
-              </div>
-              <div className="flex-1 space-y-1">                <div className="flex items-start justify-between gap-2">
-                  <h3 className="line-clamp-2 font-medium">
-                    <a
-                      href={`/document/${result.id}`}
-                      className="inline-flex items-center gap-1 hover:underline"
-                    >                      {result.highlights?.['metadata.Judul']?.[0] ? (
-                        <span 
-                          dangerouslySetInnerHTML={{
-                            __html: parseHighlights(result.highlights['metadata.Judul'][0])
-                          }}
-                        />
-                      ) : (
-                        result.title
-                      )}
-                      <ArrowUpRight className="h-3 w-3 opacity-70" />
-                    </a>
-                  </h3>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="whitespace-nowrap">
-                      {result.type}
-                    </Badge>
-                    {result.score && (
-                      <Badge variant="secondary" className="text-xs">
-                        {Math.round(result.score * 100) / 100}
+        <DocumentViewerDialog key={result.id} result={result}>
+          <Card className="cursor-pointer overflow-hidden transition-shadow hover:shadow-md">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <div className="mt-1 rounded-md bg-primary/10 p-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1 space-y-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="line-clamp-2 font-medium">
+                      <span className="inline-flex items-center gap-1 hover:underline">
+                        {result.highlights?.['metadata.Judul']?.[0] ? (
+                          <span
+                            dangerouslySetInnerHTML={{
+                              __html: parseHighlights(
+                                result.highlights['metadata.Judul'][0]
+                              ),
+                            }}
+                          />
+                        ) : (
+                          result.title
+                        )}
+                        <ArrowUpRight className="h-3 w-3 opacity-70" />
+                      </span>
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="whitespace-nowrap">
+                        {result.type}
                       </Badge>
+                      {result.score && (
+                        <Badge variant="secondary" className="text-xs">
+                          {Math.round(result.score * 100) / 100}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      {result.date}
+                    </span>
+                    <span>No. {result.number}</span>
+                  </div>
+                  <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                    {result.highlights?.['abstrak']?.[0] ? (
+                      <span
+                        dangerouslySetInnerHTML={{
+                          __html: parseHighlights(
+                            result.highlights['abstrak'][0]
+                          ),
+                        }}
+                      />
+                    ) : (
+                      result.excerpt
                     )}
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {result.tags.map((tag) => (
+                      <Badge key={tag} variant="secondary" className="text-xs">
+                        {tag}
+                      </Badge>
+                    ))}
                   </div>
-                </div>
-                <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    {result.date}
-                  </span>
-                  <span>No. {result.number}</span>
-                </div>                <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                  {result.highlights?.['abstrak']?.[0] ? (
-                    <span 
-                      dangerouslySetInnerHTML={{
-                        __html: parseHighlights(result.highlights['abstrak'][0])
-                      }}
-                    />
-                  ) : (
-                    result.excerpt
+                  {result.files && result.files.length > 0 && (
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      {result.files.length} file
+                      {result.files.length > 1 ? 's' : ''} tersedia
+                    </div>
                   )}
-                </p>
-                <div className="mt-2 flex flex-wrap gap-1">
-                  {result.tags.map((tag) => (
-                    <Badge key={tag} variant="secondary" className="text-xs">
-                      {tag}
-                    </Badge>
-                  ))}
                 </div>
-                {result.files && result.files.length > 0 && (
-                  <div className="mt-2 text-xs text-muted-foreground">
-                    {result.files.length} file{result.files.length > 1 ? 's' : ''} tersedia
-                  </div>
-                )}
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </DocumentViewerDialog>
       ))}
     </div>
   );

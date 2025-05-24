@@ -1,0 +1,2 @@
+Berikut adalah link repository GitHub untuk aplikasi CariHukum yang berisi source code lengkap fullstack dengan fitur pencarian dokumen hukum, autocomplete, dan antarmuka yang responsif
+[LINK]

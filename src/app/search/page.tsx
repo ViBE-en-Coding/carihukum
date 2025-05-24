@@ -93,7 +93,7 @@ export default function SearchPage({
               )}
             </div>
             {/* AI Overview section */}
-            {query && <AiOverview query={query} />}{' '}
+            {query && <AiOverview query={query} contents={searchResponse?.results?.slice(0, 5).map((result) => JSON.stringify(result)) ?? []} />}{' '}
             <Suspense fallback={<SearchSkeleton />}>
               <SearchResults
                 query={query}

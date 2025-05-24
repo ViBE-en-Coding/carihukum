@@ -4,13 +4,55 @@ import { Bot } from 'lucide-react';
 
 interface AiOverviewProps {
   query: string;
+  contents: string[];
 }
 
-export function AiOverview({ query }: AiOverviewProps) {
-  // TODO: Implement AI summary fetching here
-  const getSummary = (query: string) => {
-    return `Berdasarkan pencarian "${query}", berikut ringkasan informasi hukum terkait: Terdapat beberapa peraturan perundang-undangan yang relevan dengan kata kunci tersebut. Peraturan-peraturan ini mencakup berbagai aspek hukum seperti regulasi, ketentuan, dan pedoman yang berlaku di Indonesia.`;
+const prompt = (props: AiOverviewProps) => `
+Anda adalah seorang asiten AI yang melakukan ringkasan informasi pada suatu halaman mesin pencarian hukum (SERP summary).
+Anda diberikan query berikut: "${props.query}".
+Berdasarkan query tersebut, berikan ringkasan informasi hukum yang relevan dengan query tersebut.
+Berikut adalah top-5 hasil pencarian yang relevan dengan query tersebut:
+${props.contents.map((content, index) => `Hasil ${index + 1}: ${content}`).join('\n')}
+`
+
+export function AiOverview({ query, contents }: AiOverviewProps) {
+  const [summary, setSummary] = React.useState<string | null>(null);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+
+  const getSummary = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch('/api/v1/ai', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt: prompt({ query, contents }) }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch AI summary');
+      }
+
+      const data = await response.json();
+      setSummary(data.summary);
+      return data.summary;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      return 'Maaf, terjadi kesalahan dalam memuat ringkasan AI.';
+    } finally {
+      setLoading(false);
+    }
   };
+
+  React.useEffect(() => {
+    if (query && contents?.length > 0) {
+      getSummary();
+    }
+  }, [query, contents]);
 
   return (
     <Card className="mb-6">
@@ -21,9 +63,15 @@ export function AiOverview({ query }: AiOverviewProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="mb-3 text-sm text-muted-foreground">
-          {getSummary(query)}
-        </p>
+        {loading ? (
+          <p className="mb-3 text-sm text-muted-foreground">Memuat ringkasan AI...</p>
+        ) : error ? (
+          <p className="mb-3 text-sm text-red-500">{error}</p>
+        ) : (
+          <p className="mb-3 text-sm text-muted-foreground">
+            {summary}
+          </p>
+        )}
         <div className="text-xs text-muted-foreground">
           AI dapat melakukan kesalahan. Verifikasi informasi penting.
         </div>

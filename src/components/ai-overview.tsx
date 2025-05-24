@@ -57,8 +57,10 @@ export function AiOverview({ query, contents }: AiOverviewProps) {
     }
   }, [query, contents]);
 
+  if (error) return null;
+
   return (
-    <Card className="mb-6">
+    <Card className="mb-6 bg-blue-50">
       <CardHeader className="pb-3 bg-blue-50">
         <CardTitle className="flex items-center gap-2 text-lg font-medium">
           <Bot className={cn("h-5 w-5 text-primary",
@@ -75,10 +77,8 @@ export function AiOverview({ query, contents }: AiOverviewProps) {
             <Skeleton className="h-4 w-[95%] bg-blue-100" />
             <Skeleton className="h-4 w-[85%] bg-blue-100" />
           </div>
-        ) : error ? (
-          <p className="mb-3 text-sm text-red-500 bg-blue-50">{error}</p>
         ) : (
-          <div className="mb-3 text-sm text-muted-foreground prose max-w-none bg-blue-50 opacity-80">
+          <div className="mb-3 text-sm text-muted-foreground prose max-w-none bg-blue-50 opacity-80 prose-strong:opacity-80">
             <Markdown remarkPlugins={[remarkGFM]}>
               {summary}
             </Markdown>

@@ -15,6 +15,8 @@ export async function GET(request: Request) {
     const query = searchParams.get('query');
     const page = searchParams.get('page') || '1';
     const limit = searchParams.get('limit') || '10';
+    const docType = searchParams.get('docType');
+    const year = searchParams.get('year');
 
     if (!query) {
         return new Response(JSON.stringify({ error: 'Query parameter is required' }), {
@@ -35,8 +37,39 @@ export async function GET(request: Request) {
     const startTime = Date.now();
 
     try {
+        // Build filter conditions
+        const filters: any[] = [];
+
+        if (docType) {
+            if (docType === 'lainya') {
+                // Filter out the specific document types
+                filters.push({
+                    bool: {
+                        must_not: [
+                            { term: { "metadata.Bentuk Singkat": "Perpres" } },
+                            { term: { "metadata.Bentuk Singkat": "PP" } },
+                            { term: { "metadata.Bentuk Singkat": "UU" } },
+                            { term: { "metadata.Bentuk Singkat": "UUDrt" } },
+                            { term: { "metadata.Bentuk Singkat": "Keppres" } },
+                            { term: { "metadata.Bentuk Singkat": "Inpres" } }
+                        ]
+                    }
+                });
+            } else {
+                filters.push({
+                    term: { "metadata.Bentuk Singkat": docType }
+                });
+            }
+        }
+
+        if (year) {
+            filters.push({
+                term: { "metadata.Tahun": year }
+            });
+        }
+
         // Build ElasticSearch query
-        const searchQuery = {
+        const buildSearchQuery = (includeFiles = true): any => ({
             from: from,
             size: limitNum,
             query: {
@@ -46,8 +79,8 @@ export async function GET(request: Request) {
                         { match: { "metadata.Judul": { query: query, boost: 3.0 } } },
                         // Search in document number
                         { match: { "metadata.Nomor": { query: query, boost: 2.0 } } },
-                        // Search in document content
-                        {
+                        // Search in document content (conditionally included)
+                        ...(includeFiles ? [{
                             nested: {
                                 path: "files",
                                 query: {
@@ -55,27 +88,30 @@ export async function GET(request: Request) {
                                 },
                                 score_mode: "avg"
                             }
-                        },
+                        }] : []),
                         // Search in abstract
                         { match: { "abstrak": { query: query, boost: 2.0 } } },
                         // Search in notes
                         { match: { "catatan": query } }
-                    ]
+                    ],
+                    ...(filters.length > 0 && { filter: filters })
                 }
             },
             highlight: {
                 fields: {
                     "metadata.Judul": {},
                     "abstrak": {},
-                    "files.content": {}
+                    ...(includeFiles && { "files.content": {} })
                 },
                 pre_tags: ["**"],
                 post_tags: ["**"]
             }
-        };
+        });
+
+        let searchQuery = buildSearchQuery(true);
 
         // Make request to ElasticSearch
-        const response = await fetch(ES_ENDPOINT + '_search', {
+        let response = await fetch(ES_ENDPOINT + '_search', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -83,6 +119,20 @@ export async function GET(request: Request) {
             },
             body: JSON.stringify(searchQuery)
         });
+
+        // If 400 error, retry without files.content
+        if (response.status === 400) {
+            console.log('Retrying search without files.content due to 400 error');
+            searchQuery = buildSearchQuery(false);
+            response = await fetch(ES_ENDPOINT + '_search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Basic ' + Buffer.from(`${ES_USERNAME}:${ES_PASSWORD}`).toString('base64')
+                },
+                body: JSON.stringify(searchQuery)
+            });
+        }
 
         if (!response.ok) {
             let errorMessage = `ElasticSearch query failed with status ${response.status}`;

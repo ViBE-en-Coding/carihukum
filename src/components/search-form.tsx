@@ -44,7 +44,7 @@ export function SearchForm({ initialQuery = '', compact = false }: SearchFormPro
     }
 
     setIsLoadingSuggestions(true);
-    
+
     try {
       // Menggunakan getQuerySuggestions yang sudah disesuaikan dengan API
       const suggestions = await getQuerySuggestions(searchQuery);

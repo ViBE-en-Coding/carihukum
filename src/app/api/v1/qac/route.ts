@@ -31,10 +31,10 @@ export async function GET(request: Request) {
             "query": {
                 "bool": {
                     "should": [
-                        { "match": { "judul_autocomplete": "notaris" } },
-                        { "match": { "abstrak_autocomplete": "notaris" } },
-                        { "match": { "catatan_autocomplete": "notaris" } },
-                        { "match": { "content_autocomplete": "notaris" } }
+                        { "match": { "judul_autocomplete": query } },
+                        { "match": { "abstrak_autocomplete": query } },
+                        { "match": { "catatan_autocomplete": query } },
+                        { "match": { "content_autocomplete": query } }
                     ],
                     "minimum_should_match": 1
                 }

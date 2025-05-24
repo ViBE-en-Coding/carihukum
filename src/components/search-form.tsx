@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { saveSearchToHistory } from '@/lib/search-history';
 import { getQuerySuggestions } from '@/lib/qac';
+import { AutocompleteResults } from './autocomplete-results';
 
 interface SearchFormProps {
   initialQuery?: string;
@@ -33,6 +34,7 @@ export function SearchForm({ initialQuery = '', compact = false }: SearchFormPro
   const formRef = useRef<HTMLFormElement>(null);
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Debounced function untuk fetch suggestions
   const fetchSuggestions = useCallback(async (searchQuery: string) => {
     if (searchQuery.length < 2) {
       setAutocompleteResults([]);
@@ -44,10 +46,12 @@ export function SearchForm({ initialQuery = '', compact = false }: SearchFormPro
     setIsLoadingSuggestions(true);
     
     try {
-      // Langsung terima array string dari getQuerySuggestions
+      // Menggunakan getQuerySuggestions yang sudah disesuaikan dengan API
       const suggestions = await getQuerySuggestions(searchQuery);
       setAutocompleteResults(suggestions);
-      setShowAutocomplete(true);
+      if (suggestions.length > 0) {
+        setShowAutocomplete(true);
+      }
     } catch (error) {
       console.error('Error fetching suggestions:', error);
       setAutocompleteResults([]);
@@ -64,7 +68,7 @@ export function SearchForm({ initialQuery = '', compact = false }: SearchFormPro
 
     debounceTimeoutRef.current = setTimeout(() => {
       fetchSuggestions(query);
-    }, 300);
+    }, 300); // 300ms debounce
 
     return () => {
       if (debounceTimeoutRef.current) {
@@ -109,6 +113,20 @@ export function SearchForm({ initialQuery = '', compact = false }: SearchFormPro
     };
   }, []);
 
+  // Close autocomplete on escape key
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowAutocomplete(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
   return (
     <form
       ref={formRef}
@@ -122,7 +140,11 @@ export function SearchForm({ initialQuery = '', compact = false }: SearchFormPro
           placeholder="Cari peraturan perundang-undangan..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => query.length >= 2 && setShowAutocomplete(true)}
+          onFocus={() => {
+            if (query.length >= 2 && autocompleteResults.length > 0) {
+              setShowAutocomplete(true);
+            }
+          }}
           className={cn(
             'pr-12 transition-all duration-300 border-primary/20 focus-visible:border-primary/50',
             compact ? 'h-10' : 'h-12 shadow-sm'
@@ -133,9 +155,13 @@ export function SearchForm({ initialQuery = '', compact = false }: SearchFormPro
           size={compact ? 'sm' : 'default'}
           variant="ghost"
           className="absolute right-0 top-0 h-full px-3 text-muted-foreground hover:text-foreground"
-          disabled={isPending}
+          disabled={isPending || isLoadingSuggestions}
         >
-          <Search className={cn(compact ? 'h-4 w-4' : 'h-5 w-5')} />
+          {isPending ? (
+            <Loader2 className={cn(compact ? 'h-4 w-4' : 'h-5 w-5', 'animate-spin')} />
+          ) : (
+            <Search className={cn(compact ? 'h-4 w-4' : 'h-5 w-5')} />
+          )}
           <span className="sr-only">Cari</span>
         </Button>
       </div>
@@ -150,54 +176,4 @@ export function SearchForm({ initialQuery = '', compact = false }: SearchFormPro
       )}
     </form>
   );
-}
-
-export function AutocompleteResults({
-  results,
-  onSelect,
-  query,
-  isLoading = false,
-}: AutocompleteResultsProps) {
-  return (
-    <div className="absolute left-0 right-0 z-10 mt-1 overflow-hidden rounded-md border bg-background shadow-md">
-      {isLoading ? (
-        <div className="flex items-center justify-center p-4 text-sm text-muted-foreground">
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Mencari saran...
-        </div>
-      ) : (
-        <ul className="py-2">
-          {results.map((result) => (
-            <motion.li
-              key={result}
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.15 }}
-            >
-              <button
-                className="flex w-full items-center px-4 py-2 text-left text-sm hover:bg-muted"
-                onClick={() => onSelect(result)}
-                type="button"
-              >
-                <Search className="mr-2 h-4 w-4 text-muted-foreground" />
-                <span
-                  dangerouslySetInnerHTML={{
-                    __html: highlightQueryMatch(result, query),
-                  }}
-                />
-              </button>
-            </motion.li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
-
-// Helper function to highlight the matching part of the query
-function highlightQueryMatch(text: string, query: string) {
-  if (!query) return text;
-
-  const regex = new RegExp(`(${query.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi');
-  return text.replace(regex, '<strong class="text-primary">$1</strong>');
 }

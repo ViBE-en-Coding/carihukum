@@ -6,7 +6,8 @@ export async function getQuerySuggestions(query: string): Promise<string[]> {
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/qac?q=${encodeURIComponent(query)}`, {
+    // Sesuaikan dengan parameter yang diharapkan API (query bukan q)
+    const response = await fetch(`${API_BASE_URL}/qac?query=${encodeURIComponent(query)}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -19,7 +20,7 @@ export async function getQuerySuggestions(query: string): Promise<string[]> {
 
     const suggestions: string[] = await response.json();
     
-    // Batasi hingga 5 saran maksimal
+    // API sudah membatasi hingga 5 saran, tapi pastikan maksimal 5
     return suggestions.slice(0, 5);
   } catch (error) {
     console.error('Error fetching QAC suggestions:', error);

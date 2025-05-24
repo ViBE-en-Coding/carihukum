@@ -6,9 +6,8 @@ import { CATEGORIES } from '../home.constant';
 
 export function LegalCategories() {
   const router = useRouter();
-
-  const handleCategoryClick = (categoryId: string) => {
-    router.push(`/search?q=&category=${categoryId}`);
+  const handleCategoryClick = (category: any) => {
+    router.push(`/search?q=${encodeURIComponent(category.query)}`);
   };
 
   const container = {
@@ -34,11 +33,10 @@ export function LegalCategories() {
         variants={container}
         initial="hidden"
         animate="show"
-      >
-        {CATEGORIES.map((category) => (
+      >        {CATEGORIES.map((category) => (
           <motion.button
             key={category.id}
-            onClick={() => handleCategoryClick(category.id)}
+            onClick={() => handleCategoryClick(category)}
             className={`flex flex-col items-center justify-center rounded-lg p-4 ${category.color} transition-all hover:opacity-90`}
             variants={item}
             whileHover={{ scale: 1.03 }}

@@ -8,7 +8,7 @@ interface SearchPaginationProps {
   currentPage: number;
   totalPages: number;
   query: string;
-  category?: string;
+  docType?: string;
   year?: string;
 }
 
@@ -16,16 +16,14 @@ export function SearchPagination({
   currentPage,
   totalPages,
   query,
-  category,
+  docType,
   year,
 }: SearchPaginationProps) {
   const router = useRouter();
 
   const handlePageChange = (page: number) => {
-    const params = new URLSearchParams();
-
-    if (query) params.set('q', query);
-    if (category) params.set('category', category);
+    const params = new URLSearchParams();    if (query) params.set('q', query);
+    if (docType) params.set('docType', docType);
     if (year) params.set('year', year);
     params.set('page', page.toString());
 

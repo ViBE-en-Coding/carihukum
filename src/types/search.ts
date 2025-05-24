@@ -61,7 +61,7 @@ export interface SearchParams {
   query: string;
   page: number;
   limit?: number;
-  category?: string;
+  docType?: string;
   year?: string;
 }
 

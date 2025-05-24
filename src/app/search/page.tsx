@@ -15,14 +15,14 @@ export default function SearchPage({
   readonly searchParams: Promise<{
     q: string;
     page?: string;
-    category?: string;
+    docType?: string;
     year?: string;
   }>;
 }) {
   const resolvedSearchParams = use(searchParams);
   const query = resolvedSearchParams.q ?? '';
   const page = Number(resolvedSearchParams.page) || 1;
-  const category = resolvedSearchParams.category ?? '';
+  const docType = resolvedSearchParams.docType ?? '';
   const year = resolvedSearchParams.year ?? '';
   const [searchResponse, setSearchResponse] = useState<SearchResponse | null>(
     null
@@ -60,9 +60,8 @@ export default function SearchPage({
       </header>
       <div className="container flex-1 py-6">
         <div className="flex flex-col gap-6 md:flex-row">
-          <div className="shrink-0 md:w-64">
-            <SearchFilters
-              selectedCategory={category}
+          <div className="shrink-0 md:w-64">            <SearchFilters
+              selectedDocType={docType}
               selectedYear={year}
               query={query}
             />
@@ -94,22 +93,20 @@ export default function SearchPage({
             </div>
             {/* AI Overview section */}
             {query && <AiOverview query={query} contents={searchResponse?.results?.slice(0, 5).map((result) => JSON.stringify(result)) ?? []} />}{' '}
-            <Suspense fallback={<SearchSkeleton />}>
-              <SearchResults
+            <Suspense fallback={<SearchSkeleton />}>              <SearchResults
                 query={query}
                 page={page}
-                category={category}
+                docType={docType}
                 year={year}
                 onSearchComplete={handleSearchComplete}
               />
             </Suspense>
             {searchResponse && searchResponse.total > 0 && (
-              <div className="mt-6">
-                <SearchPagination
+              <div className="mt-6">                <SearchPagination
                   currentPage={page}
                   totalPages={totalPages}
                   query={query}
-                  category={category}
+                  docType={docType}
                   year={year}
                 />
               </div>

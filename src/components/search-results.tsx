@@ -17,7 +17,7 @@ import { DocumentViewerDialog } from '@/components/document-viewer-dialog';
 interface SearchResultsProps {
   readonly query: string;
   readonly page: number;
-  readonly category?: string;
+  readonly docType?: string;
   readonly year?: string;
   readonly onSearchComplete?: (response: SearchResponse) => void;
 }
@@ -25,7 +25,7 @@ interface SearchResultsProps {
 export function SearchResults({
   query,
   page,
-  category,
+  docType,
   year,
   onSearchComplete,
 }: SearchResultsProps) {
@@ -47,11 +47,10 @@ export function SearchResults({
       setLoading(true);
       setError(null);
 
-      try {
-        const response = await searchDocuments({
+      try {        const response = await searchDocuments({
           query,
           page,
-          category,
+          docType,
           year,
         });
         setResults(response.results);
@@ -67,7 +66,7 @@ export function SearchResults({
       }
     }
     fetchResults();
-  }, [query, page, category, year]);
+  }, [query, page, docType, year]);
 
   if (loading) {
     return (

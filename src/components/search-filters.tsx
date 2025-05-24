@@ -5,65 +5,74 @@ import { useRouter } from 'next/navigation';
 import { Filter, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface SearchFiltersProps {
-  selectedCategory?: string;
+  selectedDocType?: string;
   selectedYear?: string;
   query: string;
 }
 
-const categories = [
-  { id: 'uu', label: 'Undang-Undang' },
-  { id: 'pp', label: 'Peraturan Pemerintah' },
-  { id: 'perpres', label: 'Peraturan Presiden' },
-  { id: 'permen', label: 'Peraturan Menteri' },
-  { id: 'perda', label: 'Peraturan Daerah' },
-  { id: 'putusan', label: 'Putusan Pengadilan' },
+const docTypes = [
+  { id: 'UU', label: 'Undang-Undang (UU)' },
+  { id: 'PP', label: 'Peraturan Pemerintah (PP)' },
+  { id: 'Perpres', label: 'Peraturan Presiden (Perpres)' },
+  { id: 'UUDrt', label: 'Undang-Undang Darurat (UUDrt)' },
+  { id: 'Keppres', label: 'Keputusan Presiden (Keppres)' },
+  { id: 'Inpres', label: 'Instruksi Presiden (Inpres)' },
+  { id: 'lainya', label: 'Lainnya' },
 ];
 
-const years = [
-  { id: '2023', label: '2023' },
-  { id: '2022', label: '2022' },
-  { id: '2021', label: '2021' },
-  { id: '2020', label: '2020' },
-  { id: '2019', label: '2019' },
-  { id: '2018', label: '2018' },
-];
+// Generate years from 1800 to current year + 1
+const currentYear = new Date().getFullYear();
+const years = Array.from({ length: currentYear - 1800 + 2 }, (_, i) => {
+  const year = currentYear + 1 - i;
+  return { id: year.toString(), label: year.toString() };
+});
 
 export function SearchFilters({
-  selectedCategory = '',
+  selectedDocType = '',
   selectedYear = '',
   query,
 }: SearchFiltersProps) {
   const router = useRouter();
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [categoryExpanded, setCategoryExpanded] = useState(true);
+  const [docTypeExpanded, setDocTypeExpanded] = useState(true);
   const [yearExpanded, setYearExpanded] = useState(true);
 
-  const handleCategoryChange = (categoryId: string) => {
-    const newCategory = selectedCategory === categoryId ? '' : categoryId;
-    updateFilters({ category: newCategory, year: selectedYear });
+  const handleDocTypeChange = (docTypeId: string) => {
+    const newDocType = selectedDocType === docTypeId ? '' : docTypeId;
+    updateFilters({ docType: newDocType, year: selectedYear });
   };
-
   const handleYearChange = (yearId: string) => {
     const newYear = selectedYear === yearId ? '' : yearId;
-    updateFilters({ category: selectedCategory, year: newYear });
+    updateFilters({ docType: selectedDocType, year: newYear });
+  };
+
+  const handleYearInputChange = (value: string) => {
+    // Only update if the value is a valid year or empty
+    if (
+      value === '' ||
+      (!isNaN(Number(value)) &&
+        Number(value) >= 1800 &&
+        Number(value) <= currentYear + 1)
+    ) {
+      updateFilters({ docType: selectedDocType, year: value });
+    }
   };
 
   const updateFilters = ({
-    category,
+    docType,
     year,
   }: {
-    category: string;
+    docType: string;
     year: string;
   }) => {
     const params = new URLSearchParams();
 
     if (query) params.set('q', query);
-    if (category) params.set('category', category);
+    if (docType) params.set('docType', docType);
     if (year) params.set('year', year);
 
     router.push(`/search?${params.toString()}`);
@@ -73,7 +82,7 @@ export function SearchFilters({
     router.push(`/search?q=${encodeURIComponent(query)}`);
   };
 
-  const hasActiveFilters = selectedCategory || selectedYear;
+  const hasActiveFilters = selectedDocType || selectedYear;
 
   return (
     <div className="space-y-4">
@@ -88,7 +97,7 @@ export function SearchFilters({
           Filter
           {hasActiveFilters && (
             <span className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
-              {(selectedCategory ? 1 : 0) + (selectedYear ? 1 : 0)}
+              {(selectedDocType ? 1 : 0) + (selectedYear ? 1 : 0)}
             </span>
           )}
         </Button>
@@ -132,13 +141,14 @@ export function SearchFilters({
               </div>
 
               <div className="space-y-4">
+                {' '}
                 <div className="space-y-2">
                   <div
                     className="flex cursor-pointer items-center justify-between"
-                    onClick={() => setCategoryExpanded(!categoryExpanded)}
+                    onClick={() => setDocTypeExpanded(!docTypeExpanded)}
                   >
-                    <h4 className="text-sm font-medium">Jenis Peraturan</h4>
-                    {categoryExpanded ? (
+                    <h4 className="text-sm font-medium">Jenis Dokumen</h4>
+                    {docTypeExpanded ? (
                       <ChevronUp className="h-4 w-4 text-muted-foreground" />
                     ) : (
                       <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -146,7 +156,7 @@ export function SearchFilters({
                   </div>
 
                   <AnimatePresence>
-                    {categoryExpanded && (
+                    {docTypeExpanded && (
                       <motion.div
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
@@ -154,35 +164,32 @@ export function SearchFilters({
                         transition={{ duration: 0.2 }}
                         className="overflow-hidden"
                       >
-                        <div className="space-y-2 pt-1">
-                          {categories.map((category) => (
-                            <div
-                              key={category.id}
-                              className="flex items-center space-x-2"
+                        {' '}
+                        <div className="grid grid-cols-1 gap-2 pt-1">
+                          {docTypes.map((docType) => (
+                            <button
+                              key={docType.id}
+                              onClick={() => handleDocTypeChange(docType.id)}
+                              className={`flex items-center justify-between rounded-lg border p-3 text-left text-sm transition-all hover:bg-accent ${
+                                selectedDocType === docType.id
+                                  ? 'border-primary bg-primary/5 text-primary'
+                                  : 'border-border hover:border-primary/50'
+                              }`}
                             >
-                              <Checkbox
-                                id={`category-${category.id}`}
-                                checked={selectedCategory === category.id}
-                                onCheckedChange={() =>
-                                  handleCategoryChange(category.id)
-                                }
-                              />
-                              <Label
-                                htmlFor={`category-${category.id}`}
-                                className="text-sm"
-                              >
-                                {category.label}
-                              </Label>
-                            </div>
+                              <span className="font-medium">
+                                {docType.label}
+                              </span>
+                              {selectedDocType === docType.id && (
+                                <div className="h-2 w-2 rounded-full bg-primary" />
+                              )}
+                            </button>
                           ))}
                         </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
                 </div>
-
                 <Separator />
-
                 <div className="space-y-2">
                   <div
                     className="flex cursor-pointer items-center justify-between"
@@ -205,27 +212,35 @@ export function SearchFilters({
                         transition={{ duration: 0.2 }}
                         className="overflow-hidden"
                       >
-                        <div className="space-y-2 pt-1">
-                          {years.map((year) => (
-                            <div
-                              key={year.id}
-                              className="flex items-center space-x-2"
+                        <div className="space-y-3 pt-1">
+                          {' '}
+                          {/* Year Input Field */}
+                          <div className="space-y-2">
+                            <label
+                              htmlFor="year-input"
+                              className="text-xs font-medium text-muted-foreground"
                             >
-                              <Checkbox
-                                id={`year-${year.id}`}
-                                checked={selectedYear === year.id}
-                                onCheckedChange={() =>
-                                  handleYearChange(year.id)
-                                }
-                              />
-                              <Label
-                                htmlFor={`year-${year.id}`}
-                                className="text-sm"
-                              >
-                                {year.label}
-                              </Label>
-                            </div>
-                          ))}
+                              Masukkan Tahun Spesifik
+                            </label>
+                            <input
+                              id="year-input"
+                              type="number"
+                              min="1800"
+                              max={currentYear + 1}
+                              placeholder="Contoh: 2014"
+                              value={
+                                selectedYear &&
+                                !selectedYear.includes('-') &&
+                                selectedYear !== 'before-1980'
+                                  ? selectedYear
+                                  : ''
+                              }
+                              onChange={(e) =>
+                                handleYearInputChange(e.target.value)
+                              }
+                              className="w-full rounded-md border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                            />
+                          </div>
                         </div>
                       </motion.div>
                     )}

@@ -12,7 +12,7 @@ const API_BASE_URL = '/api/v1';
 export async function searchDocuments(
   params: SearchParams
 ): Promise<SearchResponse> {
-  const { query, page, limit = 10, category, year } = params;
+  const { query, page, limit = 10, docType, year } = params;
 
   const searchParams = new URLSearchParams({
     query,
@@ -21,8 +21,8 @@ export async function searchDocuments(
   });
 
   // Add optional filters
-  if (category && category !== '') {
-    searchParams.set('category', category);
+  if (docType && docType !== '') {
+    searchParams.set('docType', docType);
   }
   if (year && year !== '') {
     searchParams.set('year', year);
